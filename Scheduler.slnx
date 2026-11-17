@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="CLAUDE.md" />
+  </Folder>
+  <Project Path="Scheduler.API/Scheduler.API.csproj" />
+  <Project Path="Scheduler.Core/Scheduler.Core.csproj" />
+  <Project Path="Scheduler.Infrastructure/Scheduler.Infrastructure.csproj" />
+  <Project Path="Scheduler.Tests/Scheduler.Tests.csproj" />
+  <Project Path="Scheduler/Scheduler.csproj" />
+</Solution>
