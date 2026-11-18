@@ -29,17 +29,16 @@ namespace Scheduler.Tests.Entities
         [InlineData("15551234567")]
         public void Constructor_LeadingCountryCode_IsAccepted(string input)
         {
-            var phone = new PhoneNumber(input, PhoneType.Home);
+            var phone = new PhoneNumber(input, PhoneType.Landline);
 
             Assert.Equal("+15551234567", phone.Number);
         }
 
         [Theory]
         [InlineData(PhoneType.Mobile)]
-        [InlineData(PhoneType.Home)]
+        [InlineData(PhoneType.Landline)]
         [InlineData(PhoneType.Work)]
-        [InlineData(PhoneType.Spouse)]
-        [InlineData(PhoneType.Other)]
+        [InlineData(PhoneType.Fax)]
         public void Constructor_ValidType_IsStored(PhoneType type)
         {
             var phone = new PhoneNumber("5551234567", type);
@@ -51,6 +50,7 @@ namespace Scheduler.Tests.Entities
 
         [Theory]
         [InlineData(-1)]
+        [InlineData(4)]
         [InlineData(5)]
         [InlineData(99)]
         public void Constructor_UndefinedType_Throws(int rawType)
@@ -130,6 +130,64 @@ namespace Scheduler.Tests.Entities
                 () => new PhoneNumber(null!, PhoneType.Mobile));
 
             Assert.Equal("number", ex.ParamName);
+        }
+
+        // ---------- Constructor error messages ----------
+
+        [Theory]
+        [InlineData("555a123b4567", "Phone number contains invalid characters.")]
+        [InlineData("555+1234567", "Phone number contains invalid characters.")]
+        [InlineData("555123456", "Phone number must have 10 digits.")]
+        [InlineData("55512345678", "Phone number must have 10 digits.")]
+        [InlineData("", "Phone number must have 10 digits.")]
+        public void Constructor_InvalidNumber_ThrowsWithSpecificMessage(string input, string expectedMessage)
+        {
+            var ex = Assert.Throws<ArgumentException>(
+                () => new PhoneNumber(input, PhoneType.Mobile));
+
+            // ArgumentException appends " (Parameter 'number')" to Message.
+            Assert.StartsWith(expectedMessage, ex.Message);
+        }
+
+        // ---------- TryNormalize ----------
+
+        [Theory]
+        [InlineData("5551234567")]
+        [InlineData("(555) 123-4567")]
+        [InlineData("+1 555 123 4567")]
+        [InlineData("1-555-123-4567")]
+        public void TryNormalize_ValidInput_ReturnsTrueWithDigitsAndNoError(string input)
+        {
+            var result = PhoneNumber.TryNormalize(input, out var digits, out var error);
+
+            Assert.True(result);
+            Assert.Equal("5551234567", digits);
+            Assert.Null(error);
+        }
+
+        [Theory]
+        [InlineData("555a123b4567", "Phone number contains invalid characters.")]
+        [InlineData("555-123-4567 x12", "Phone number contains invalid characters.")]
+        [InlineData("555123456", "Phone number must have 10 digits.")]
+        [InlineData("155512345678", "Phone number must have 10 digits.")]
+        [InlineData("   ", "Phone number must have 10 digits.")]
+        public void TryNormalize_InvalidInput_ReturnsFalseWithEmptyDigitsAndError(string input, string expectedError)
+        {
+            var result = PhoneNumber.TryNormalize(input, out var digits, out var error);
+
+            Assert.False(result);
+            Assert.Equal(string.Empty, digits);
+            Assert.Equal(expectedError, error);
+        }
+
+        [Fact]
+        public void TryNormalize_Null_ReturnsFalseWithoutThrowing()
+        {
+            var result = PhoneNumber.TryNormalize(null, out var digits, out var error);
+
+            Assert.False(result);
+            Assert.Equal(string.Empty, digits);
+            Assert.Equal("Phone number is required.", error);
         }
     }
 }
